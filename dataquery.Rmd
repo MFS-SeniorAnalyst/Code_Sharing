@@ -1,0 +1,58 @@
+---
+title: "DW SQL Connection"
+author: "AMP_MFS"
+date: "2/17/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+```
+
+```{r}
+#pulling up to date info from the SQL server
+#install.packages("RODBC")
+library("RODBC")
+
+
+
+#The below connection was an attempt that didnt work.
+#con <- 'Driver = {ODBC Driver 13 for SQL Server}; Server = tcp:[mfs-dw-1].database.windows.net,[1433]; Database = [RedCapDataPivot]; UID = [redcap_rpt]; PWD = [!!redcap!!!!!];Encrypt=yes;TrustServerCertificate=no;ConnectionTimeout=30;'
+
+my_server="mfs-dw-1"
+my_db="DW_Sched"
+my_username="dw_sched_rpt"
+my_pwd="!!dw_sched_rpt!!!!!"
+
+
+db <- odbcDriverConnect(paste0("DRIVER={SQL Server};
+                                 server=",my_server,";
+                                 database=",my_db,";
+                                 uid=",my_username,";
+                                 pwd=",my_pwd))
+
+
+sql="SELECT * FROM [mfs_client_svc]"
+sql2="SELECT * FROM [mfs_prv_001]"
+
+
+
+mfs_client_svc <- sqlQuery(db,sql)
+mfs_prv_001<-sqlQuery(db,sql2)
+
+
+
+install.packages("writexl")
+library("writexl")
+## put in folder as excel
+write_xlsx(mfs_client_svc,"C:/Users/PearsonAl/OneDrive - Metropolitan Family Services/My files/Behavioral Health/Behavioral Health Redesign/Month Data/CLIENT_SVC.xlsx")
+write_xlsx(mfs_prv_001,"C:/Users/PearsonAl/OneDrive - Metropolitan Family Services/My files/Behavioral Health/Behavioral Health Redesign/Month Data/PRV_001.xlsx")
+
+
+```
+
+
+
+
+```
