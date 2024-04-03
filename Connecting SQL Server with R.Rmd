@@ -1,0 +1,121 @@
+---
+title: "Connecting R to SQL"
+author: "AMP_MFS"
+date: "2024-02-19"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Connecting to a SQL Server using R syntax
+
+Querying a database from a server running R requires three things:  
+
+1. Network security that allows you to communicate between the machines
+2. Drivers installed on the R server
+3. Configurations that allow you to connect to the database from R
+
+To create the connection from R to the database, using the odbc package, which is a DBI compliant interface to using ODBC drivers, is recommended.  You can acquire the latest stable version from CRAN with install.packages("odbc"). *Remember to load the package post installing*  
+
+For additional information and detail about this process, you can review:
+
+source: https://stackoverflow.com/questions/14334840/how-to-insert-a-dataframe-into-a-sql-server-table
+other source:https://github.com/simon-anasta/dbplyr_helpers/blob/master/dbplyr_helper_functions.R
+troubleshooting source:https://stackoverflow.com/questions/61141956/write-multiple-dataframes-with-a-loop-into-sql-in-r
+##Connecting to pull things out the server
+
+This next section will be the actual syntax needed to pull things from the server.
+```{r Query Out}
+#load the libaries
+library("RODBC")
+library("odbc")
+#The following chunk of code is creating aliases to house the necessary credentials for the server and database you are trying to access. NOTE THE QUOTATION MARKS. YOUR CREDENTIALS SHOULD GO WITHIN THE QUOTES.
+
+my_server="SERVER NAME"
+my_db="DATABASE NAME"
+my_username="USERNAME"
+my_pwd="PASSWORD"
+
+#This next session is using the odbc connection to call the server and connect using the credentials you just identified and assigned to those dummy variables.
+
+db <- odbcDriverConnect(paste0("DRIVER={SQL Server};
+                                server=",my_server,";
+                               database=",my_db,";
+                                uid=",my_username,";
+                                 pwd=",my_pwd))
+
+#NOTE YOU CAN NAME YOUR DATABASE "db" ANYTHING! JUST NOTE ITS USAGE AND ADJUST ACCORDINGLY BELOW
+
+#This next section is where you query the data. THIS SECTION IS WHERE YOU ARE CODING IN SQL WITHIN THE R INTERFACE. All of your code should be place within quotations.Any syntax/logic that can be done in SQL can be coded here.
+
+      #note the dummy variables created to house the query. You can name this whatever you choose. It will be stored as a variable in the Values section of your environment
+
+
+sql="SELECT * FROM [DATABASE]  WHERE DateofService >= '2024-01-01 00:00:01'"
+sql2="SELECT  CONVERT (DATE,FirstAuthorSignature,101) AS first_signature,
+              CONVERT (DATE,PreviousAuthorSignature,101) AS previous_signature,
+              CONVERT (varchar,CurrentAuthorSignature,101) AS current_signature,
+      * FROM [DATABASE]"
+
+#This next section is not turning the stored array of values we just queried from the tables in the SQL server and placing them in a dataframe table that can be used in R. It will be stored in the Data section of the R environment
+    #name your tables however you want them to be named throughout the rest of your code
+    #make sure that the second clause in the sqlQuery() function matches the dummy variable you saved the query in up above. 
+    #If you changed the name of the database to anything different up above, remember to change it here 
+
+TABLE1 <- sqlQuery(db,sql)
+TABLE2 <-sqlQuery(db,sql2)
+
+#At this point, check that your tables have made it into the environment and then close the connection. Note the db in this example. If you changed the name of the database to anything different up above, remember to change it here 
+odbcClose(db)
+```
+
+This next section will be the actual syntax needed to push things to the server.
+
+##### Sending Newly Formed tables to the SQL server
+```{r SQL write}
+
+#connect to the SQL playground
+
+
+##goal of this section is to take the dataframes you have created within your R environment and push back to the SQL server of your choice
+
+
+library(odbc)
+
+#NOTE THE VARIABLE con.This is an arbitrary holder of the server information like db was in the above  
+con <- dbConnect(odbc(),
+                 Driver = "SQL Server",
+                 Server = "SERVERNAME",
+                 Database = "DB NAME",
+                 UID = "USERNAME",
+                 PWD = "PASSWORD")
+
+
+#Create a list of all the data frames you want to go through. They should be listed here without quotations 
+QMYdf<-list(Documentation_totals_staff_redo,
+Documentation_totals_2_team)
+
+#now create a table to house all the information from the tables you are storing in the list
+QMYdf_names <- c("TableNameAs_listedinenvironment",
+"TableNameAs_listed_inenvironment")
+
+
+#loop through databases and write to SQL using the below function
+for(x in 1:length(QMYdf))
+  {dbWriteTable(con, 
+              QMYdf_names[x], 
+              QMYdf[[x]],
+            overwrite= TRUE)}#overwrite is important cause it will still upload even if something already exists, keeps historical data
+
+#if you change the name of the list and the table be sure to correct the names within the loop function so it matches
+
+odbcClose(con)#never forget to close your connection
+
+
+```
+
