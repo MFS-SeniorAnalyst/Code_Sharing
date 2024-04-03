@@ -1,5 +1,5 @@
 
-USE [RedCapDataPivot] 
+USE [db_name] 
 INSERT INTO [dbo].[PivotProjects] 
 ([project_id]
 ,[project_name]
@@ -8,10 +8,10 @@ INSERT INTO [dbo].[PivotProjects]
 ,[pivot_with_timestamp]
 ,[username])
 VALUES
-('436'
-,'MPA Participants'
+('PID'
+,'nameoftable'
 ,1
 ,1
 ,1
-,'apearson')
+,'your_username')
 SELECT * FROM PivotProjects
